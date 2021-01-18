@@ -30,7 +30,6 @@ export default function patch(oldVnode, newVnode) {
   console.log('--------', oldVnode, newVnode, '----------')
   if (!sameVNode(oldVnode, newVnode)) {
     console.log('不是同一节点，直接插入新的，删除旧的')
-    createDOMElement(newVnode)
     oldVnode.elm.after(newVnode.elm)
     oldVnode.elm.remove()
     finalVnode = newVnode
