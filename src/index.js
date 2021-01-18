@@ -2,7 +2,7 @@ import MyVue from './lib/MyVue.js'
 
 window.vm = new MyVue({
   el: '#app',
-  data: { msg: 'hello', list: ['A', 'B', 'C', 'D'] },
+  data: { msg: 'hello', list: ['a', 'b', 'c', 'd'] },
   render(h) {
     return h(
       'div',

@@ -10,34 +10,22 @@ function sameVNode(a, b) {
   return aKey === bKey && a.tag === b.tag
 }
 
-function moveAryItem(arr, fromIndex, toIndex) {
-  const item = arr[fromIndex]
-  arr.splice(fromIndex, 1)
-  arr.splice(toIndex, 0, item)
+function moveAryItem(ary, fromIdx, toIdx) {
+  const item = ary[fromIdx]
+  ary.splice(fromIdx, 1)
+  ary.splice(toIdx, 0, item)
 }
 
-// function moveAryItem(arr, fromIndex, toIndex) {
-//   const item = arr[fromIndex]
-//   if (fromIndex < toIndex) {
-//     arr.splice(toIndex, 0, item)
-//     arr.splice(fromIndex, 1)
-//   } else {
-//     arr.splice(fromIndex, 1)
-//     arr.splice(toIndex, 0, item)
-//   }
-// }
-
-// 待修复：虚拟dom也要更新
 export default function patch(oldVnode, newVnode) {
   if (!oldVnode.elm) {
     createDOMElement(oldVnode)
   }
 
-  // if (!newVnode.elm) {
-  //   createDOMElement(newVnode)
-  // }
+  if (!newVnode.elm) {
+    createDOMElement(newVnode)
+  }
 
-  let vnode = oldVnode
+  let finalVnode = oldVnode
 
   console.log('--------', oldVnode, newVnode, '----------')
   if (!sameVNode(oldVnode, newVnode)) {
@@ -45,7 +33,7 @@ export default function patch(oldVnode, newVnode) {
     createDOMElement(newVnode)
     oldVnode.elm.after(newVnode.elm)
     oldVnode.elm.remove()
-    vnode = newVnode
+    finalVnode = newVnode
   } else {
     console.log('是同一个节点')
     if (oldVnode === newVnode) {
@@ -63,19 +51,19 @@ export default function patch(oldVnode, newVnode) {
         }
       } else {
         console.log('不是文本节点，开始diff算法比较，补丁更新children')
-        oldVnode.children = updateChildren(
-          oldVnode.elm,
+        finalVnode.children = updateChildren(
           oldVnode.children,
-          newVnode.children
+          newVnode.children,
+          oldVnode.elm
         )
       }
     }
   }
   console.log('--------end----------')
-  return vnode
+  return finalVnode
 }
 
-function updateChildren(parentElm, oldChildren, newChildren) {
+function updateChildren(oldChildren, newChildren, parentElm) {
   const insertedVnodeQueue = [...oldChildren]
 
   let oldStartIdx = 0
@@ -136,7 +124,6 @@ function updateChildren(parentElm, oldChildren, newChildren) {
         oldChildren[oldVnodeIdx] = undefined
         newStartVnode = newChildren[++newStartIdx]
       } else {
-        createDOMElement(newStartVnode)
         oldStartVnode.elm.before(newStartVnode.elm)
         insertedVnodeQueue.splice(
           insertedVnodeQueue.findIndex((v) => v === oldStartVnode),
@@ -149,19 +136,27 @@ function updateChildren(parentElm, oldChildren, newChildren) {
   }
 
   if (oldStartIdx > oldEndIdx && newStartIdx <= newEndIdx) {
-    for (let i = newStartIdx; i <= newEndIdx; ++i) {
-      const newVnode = newChildren[i]
-      createDOMElement(newVnode)
-      parentElm.insertBefore(newVnode.elm, oldStartVnode && oldStartVnode.elm)
-      const i2 = insertedVnodeQueue.findIndex((v) => v === oldStartVnode)
-      insertedVnodeQueue.splice(
-        i2 === -1 ? insertedVnodeQueue.length : i2,
-        0,
-        newVnode
+    console.log('newChildren中还有新的节点要添加')
+    let refVnode = newChildren[newEndIdx + 1]
+    if (refVnode) {
+      let refVnodeIdx = insertedVnodeQueue.findIndex((v) =>
+        sameVNode(v, refVnode)
       )
+      refVnode = insertedVnodeQueue[refVnodeIdx]
+      for (let i = newStartIdx; i <= newEndIdx; i++) {
+        const newVnode = newChildren[i]
+        parentElm.insertBefore(newVnode.elm, refVnode.elm)
+        insertedVnodeQueue.splice(refVnodeIdx++, 0, newVnode)
+      }
+    } else {
+      for (let i = newStartIdx; i <= newEndIdx; i++) {
+        const newVnode = newChildren[i]
+        parentElm.append(newVnode.elm)
+        insertedVnodeQueue.push(newVnode)
+      }
     }
   } else if (newStartIdx > newEndIdx && oldStartIdx <= oldEndIdx) {
-    console.log(insertedVnodeQueue, oldStartIdx, oldEndIdx)
+    console.log('oldChildren中要有节点要删除')
     for (let i = oldStartIdx; i <= oldEndIdx; ++i) {
       const oldVnode = oldChildren[i]
       if (oldVnode) {

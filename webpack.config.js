@@ -10,6 +10,7 @@ module.exports = {
   },
   devServer: {
     port: 8080,
+    open: true,
     // 服务根目录（物理地址），默认项目根目录
     contentBase: path.join(__dirname, './public')
   }

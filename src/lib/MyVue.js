@@ -13,19 +13,30 @@ export default class MyVue {
 
   _initData() {
     let timerId = null
+
+    let ob = {}
+
     for (let [k, v] of Object.entries(this.$options.data)) {
-      Object.defineProperty(this, k, {
+      Object.defineProperty(ob, k, {
         get: () => {
           return v
         },
         set: (newVal) => {
-          if (v !== newVal) {
-            v = newVal
-            clearTimeout(timerId)
-            timerId = setTimeout(() => {
-              this._vnode = patch(this._vnode, this._render())
-            }, 0)
-          }
+          if (v === newVal) return
+          v = newVal
+          clearTimeout(timerId)
+          timerId = setTimeout(() => {
+            this._vnode = patch(this._vnode, this._render())
+          }, 0)
+        }
+      })
+
+      Object.defineProperty(this, k, {
+        get: () => {
+          return ob[k]
+        },
+        set: (newVal) => {
+          ob[k] = newVal
         }
       })
     }
